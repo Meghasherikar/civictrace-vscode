@@ -75,3 +75,33 @@ export async function loadCivicData() {
     evidence: evidence as EvidenceRow[],
   };
 }
+export async function saveCivicReport(
+  projectId: string,
+  content: {
+    title: string;
+    summary: string;
+    changes: string[];
+    verified: string[];
+    missingEvidence: string[];
+    questions: string[];
+  },
+) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const { data, error } = await supabase
+    .from("reports")
+    .insert({
+      project_id: projectId,
+      content,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
