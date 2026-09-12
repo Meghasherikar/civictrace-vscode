@@ -376,3 +376,25 @@ p {
     gap: 8px;
   }
 }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.connection-badge {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  font: 600 0.75rem Arial, sans-serif;
+}
+
+@media (max-width: 850px) {
+  .header-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

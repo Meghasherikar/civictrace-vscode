@@ -1,4 +1,9 @@
- import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { loadCivicData } from "./lib/loadCivicData";
+import type {
+  EvidenceRow,
+  ProjectRow,
+} from "./lib/loadCivicData";
 
 type Tab =
   | "dashboard"
@@ -8,7 +13,33 @@ type Tab =
   | "map"
   | "report";
 
-const project = {
+type AppProject = {
+  name: string;
+  code: string;
+  ward: string;
+  originalCost: number;
+  revisedCost: number;
+  originalScope: number;
+  revisedScope: number;
+  originalDuration: number;
+  revisedDuration: number;
+};
+
+type AppDocument = {
+  name: string;
+  type: string;
+  date: string;
+  status: string;
+  pageReference: string;
+};
+
+type AppEvidence = {
+  label: string;
+  status: string;
+  detail: string;
+};
+
+const localProject: AppProject = {
   name: "Ward 7 Stormwater Drain Rehabilitation",
   code: "WD07-SD-2023-114",
   ward: "Ward 7 — Nandagiri",
@@ -20,40 +51,45 @@ const project = {
   revisedDuration: 9,
 };
 
-const documents = [
+const localDocuments: AppDocument[] = [
   {
     name: "Proposal.pdf",
     type: "Proposal",
     date: "April 2023",
     status: "Verified",
+    pageReference: "page 1",
   },
   {
     name: "Budget Approval.pdf",
     type: "Budget approval",
     date: "May 2023",
     status: "Verified",
+    pageReference: "page 4",
   },
   {
     name: "Tender.pdf",
     type: "Tender",
     date: "June 2023",
     status: "Verified",
+    pageReference: "page 2",
   },
   {
     name: "Revised Work Order.pdf",
     type: "Revised work order",
     date: "January 2024",
     status: "Changed",
+    pageReference: "page 2",
   },
   {
     name: "Progress Report.pdf",
     type: "Progress report",
     date: "October 2024",
     status: "Needs review",
+    pageReference: "page 1",
   },
 ];
 
-const evidence = [
+const localEvidence: AppEvidence[] = [
   {
     label: "Proposal",
     status: "Found",
@@ -94,18 +130,140 @@ function percentageChange(oldValue: number, newValue: number) {
   return ((newValue - oldValue) / oldValue) * 100;
 }
 
+function mapProject(row: ProjectRow): AppProject {
+  return {
+    name: row.name,
+    code: row.code,
+    ward: row.ward,
+    originalCost: Number(row.original_cost),
+    revisedCost: Number(row.revised_cost),
+    originalScope: Number(row.original_scope_km),
+    revisedScope: Number(row.revised_scope_km),
+    originalDuration: Number(row.original_duration_months),
+    revisedDuration: Number(row.revised_duration_months),
+  };
+}
+
+function mapDocuments(rows: any[] | null): AppDocument[] {
+  if (!rows) return [];
+
+  return rows
+    .map((row) => {
+      const document = Array.isArray(row.documents)
+        ? row.documents[0]
+        : row.documents;
+
+      if (!document) return null;
+
+      const date = document.publication_date
+        ? new Date(document.publication_date).toLocaleDateString(
+            "en-IN",
+            {
+              month: "long",
+              year: "numeric",
+            },
+          )
+        : "Date unavailable";
+
+      const status =
+        document.document_type === "Revised work order"
+          ? "Changed"
+          : document.document_type === "Progress report"
+            ? "Needs review"
+            : "Verified";
+
+      return {
+        name: document.title,
+        type: document.document_type,
+        date,
+        status,
+        pageReference: document.page_reference ?? "Page unavailable",
+      };
+    })
+    .filter(Boolean) as AppDocument[];
+}
+
+function mapEvidence(rows: EvidenceRow[] | null): AppEvidence[] {
+  if (!rows) return [];
+
+  return rows.map((row) => ({
+    label: row.label,
+    status: row.status,
+    detail: row.detail,
+  }));
+}
+
 function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [reportVisible, setReportVisible] = useState(false);
+  const [project, setProject] = useState<AppProject>(localProject);
+  const [documents, setDocuments] =
+    useState<AppDocument[]>(localDocuments);
+  const [evidence, setEvidence] =
+    useState<AppEvidence[]>(localEvidence);
+  const [dataSource, setDataSource] = useState("Demo fallback data");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function fetchData() {
+      try {
+        const data = await loadCivicData();
+
+        if (!active) return;
+
+        setProject(mapProject(data.project));
+
+        const remoteDocuments = mapDocuments(
+          data.projectDocuments,
+        );
+
+        const remoteEvidence = mapEvidence(data.evidence);
+
+        if (remoteDocuments.length > 0) {
+          setDocuments(remoteDocuments);
+        }
+
+        if (remoteEvidence.length > 0) {
+          setEvidence(remoteEvidence);
+        }
+
+        setDataSource("Supabase data");
+      } catch {
+        if (active) {
+          setDataSource("Demo fallback data");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchData();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const costChange = useMemo(
-    () => percentageChange(project.originalCost, project.revisedCost),
-    [],
+    () =>
+      percentageChange(
+        project.originalCost,
+        project.revisedCost,
+      ),
+    [project.originalCost, project.revisedCost],
   );
 
   const scopeChange = useMemo(
-    () => percentageChange(project.originalScope, project.revisedScope),
-    [],
+    () =>
+      percentageChange(
+        project.originalScope,
+        project.revisedScope,
+      ),
+    [project.originalScope, project.revisedScope],
   );
 
   const durationChange =
@@ -130,9 +288,15 @@ function App() {
           </div>
         </div>
 
-        <span className="badge">
-          Synthetic demonstration data
-        </span>
+        <div className="header-actions">
+          <span className="connection-badge">
+            {loading ? "Connecting..." : dataSource}
+          </span>
+
+          <span className="badge">
+            Synthetic demonstration data
+          </span>
+        </div>
       </header>
 
       <nav className="nav">
@@ -168,7 +332,7 @@ function App() {
             <div className="grid four">
               <Card
                 title="Documents compared"
-                value="5"
+                value={String(documents.length)}
                 detail="Proposal through progress report"
               />
 
@@ -180,8 +344,8 @@ function App() {
 
               <Card
                 title="Evidence gaps"
-                value="3"
-                detail="2 missing, 1 needs review"
+                value={String(evidence.length)}
+                detail="Found, missing and needs review"
               />
 
               <Card
@@ -251,6 +415,11 @@ function App() {
                     >
                       {document.status}
                     </span>
+
+                    <p className="source">
+                      Source: {document.name},{" "}
+                      {document.pageReference}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -390,9 +559,10 @@ function App() {
                 <h3>What is verified?</h3>
 
                 <p>
-                  Proposal, budget approval, tender, revised work
-                  order, and progress report records are present
-                  in the synthetic dataset.
+                  The application loaded{" "}
+                  {documents.length} project documents and{" "}
+                  {evidence.length} evidence records from{" "}
+                  {dataSource.toLowerCase()}.
                 </p>
 
                 <h3>What should be checked?</h3>
