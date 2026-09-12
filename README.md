@@ -1,32 +1,64 @@
-# React + TypeScript + Vite
+# CivicTrace
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+CivicTrace is a civic-tech prototype for municipal project accountability.
 
-Currently, two official plugins are available:
+It compares project records across time and highlights changes in:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Project cost.
+- Project scope.
+- Completion duration.
+- Available evidence.
+- Neighborhood impact.
 
-## React Compiler
+## Current prototype
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The application demonstrates:
 
-## Expanding the Oxlint configuration
+- Municipal project dashboard.
+- Project document timeline.
+- Deterministic change analysis.
+- Evidence-gap detection.
+- Synthetic impact map.
+- Neutral citizen-verification report.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Demonstration data
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+The current version uses synthetic demonstration data for:
+
+- Ward 7 Stormwater Drain Rehabilitation.
+- Five project documents.
+- Three tracked changes.
+- Three evidence gaps.
+
+The records are not official municipal records.
+
+## Technology
+
+- React.
+- TypeScript.
+- Vite.
+- CSS.
+- GitHub.
+
+## Run locally
+
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the local address shown in the terminal.
+
+## Build test
+
+```bash
+npm run build
+```
+
+## Disclaimer
+
+CivicTrace summarizes demonstration records and identifies evidence gaps. It does not provide legal advice, determine wrongdoing, or replace official authorities.
+
+## Hackathon development
+
+This prototype was built during the hackathon using Lovable, VS Code, and GitHub.
