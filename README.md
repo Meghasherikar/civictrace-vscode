@@ -1,64 +1,90 @@
-# CivicTrace
+ # CivicTrace
 
-CivicTrace is a civic-tech prototype for municipal project accountability.
+CivicTrace is a civic accountability dashboard that helps people investigate public infrastructure projects through budgets, timelines, documents, and evidence gaps.
 
-It compares project records across time and highlights changes in:
+## Problem
 
-- Project cost.
-- Project scope.
-- Completion duration.
-- Available evidence.
-- Neighborhood impact.
+Public project information is often scattered across documents and difficult to compare. Citizens and journalists may struggle to identify cost changes, scope changes, delays, and missing records.
 
-## Current prototype
+## Solution
 
-The application demonstrates:
+CivicTrace brings project information into one clear investigation workflow. It highlights:
 
-- Municipal project dashboard.
-- Project document timeline.
-- Deterministic change analysis.
-- Evidence-gap detection.
-- Synthetic impact map.
-- Neutral citizen-verification report.
+- Original versus revised project costs.
+- Original versus revised project scope.
+- Duration changes.
+- Project documents and evidence.
+- Missing or uncertain records.
+- Follow-up questions for accountability.
 
-## Demonstration data
+## Demo Project
 
-The current version uses synthetic demonstration data for:
+The current demo uses:
 
-- Ward 7 Stormwater Drain Rehabilitation.
-- Five project documents.
-- Three tracked changes.
-- Three evidence gaps.
+```text
+WD07-SD-2023-114
+```
 
-The records are not official municipal records.
+The demo shows how a stormwater project can be reviewed by comparing approved plans, revised details, and available evidence.
+
+## Core Features
+
+- Civic project dashboard.
+- Project timeline.
+- Change analysis.
+- Evidence-gap tracking.
+- Impact map view.
+- Generated accountability report.
+- Supabase-backed project data.
 
 ## Technology
 
-- React.
-- TypeScript.
-- Vite.
-- CSS.
-- GitHub.
+- React
+- TypeScript
+- Vite
+- Supabase
+- CSS
 
-## Run locally
+## Run Locally
+
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-Open the local address shown in the terminal.
+Open the local URL shown in the terminal.
 
-## Build test
+Build for production:
 
 ```bash
 npm run build
 ```
 
-## Disclaimer
+## Demo Flow
 
-CivicTrace summarizes demonstration records and identifies evidence gaps. It does not provide legal advice, determine wrongdoing, or replace official authorities.
+1. Open the CivicTrace dashboard.
+2. Review the project cost, scope, and duration.
+3. Open the project timeline.
+4. Review the change analysis.
+5. Open Evidence Gaps.
+6. Identify missing records.
+7. Open Generated Report.
 
-## Hackathon development
+## Why It Matters
 
-This prototype was built during the hackathon using Lovable, VS Code, and GitHub.
+CivicTrace turns fragmented public project records into a focused investigation. It helps citizens ask better questions and makes changes in public works easier to understand.
+
+## Hackathon Scope
+
+This is a focused hackathon prototype using a prepared civic project dataset. Future versions can add authentication, more projects, document uploads, advanced search, and production-grade permissions.
+
+## Team
+
+Built for the hackathon by the CivicTrace team.
