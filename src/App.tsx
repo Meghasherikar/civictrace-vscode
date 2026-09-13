@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { loadCivicData } from "./lib/loadCivicData";
-import type {
-  EvidenceRow,
-  ProjectRow,
+import {
+  loadCivicData,
+  loadProjects,
+  type EvidenceRow,
+  type ProjectRow,
 } from "./lib/loadCivicData";
 
 type Tab =
@@ -14,6 +15,7 @@ type Tab =
   | "report";
 
 type AppProject = {
+  id: string;
   name: string;
   code: string;
   ward: string;
@@ -40,6 +42,7 @@ type AppEvidence = {
 };
 
 const localProject: AppProject = {
+  id: "demo-project",
   name: "Ward 7 Stormwater Drain Rehabilitation",
   code: "WD07-SD-2023-114",
   ward: "Ward 7 — Nandagiri",
@@ -127,11 +130,13 @@ function formatCrore(value: number) {
 }
 
 function percentageChange(oldValue: number, newValue: number) {
+  if (oldValue === 0) return 0;
   return ((newValue - oldValue) / oldValue) * 100;
 }
 
 function mapProject(row: ProjectRow): AppProject {
   return {
+    id: row.id,
     name: row.name,
     code: row.code,
     ward: row.ward,
@@ -177,7 +182,8 @@ function mapDocuments(rows: any[] | null): AppDocument[] {
         type: document.document_type,
         date,
         status,
-        pageReference: document.page_reference ?? "Page unavailable",
+        pageReference:
+          document.page_reference ?? "Page unavailable",
       };
     })
     .filter(Boolean) as AppDocument[];
@@ -196,13 +202,25 @@ function mapEvidence(rows: EvidenceRow[] | null): AppEvidence[] {
 function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [reportVisible, setReportVisible] = useState(false);
-  const [project, setProject] = useState<AppProject>(localProject);
+
+  const [project, setProject] =
+    useState<AppProject>(localProject);
+
   const [documents, setDocuments] =
     useState<AppDocument[]>(localDocuments);
+
   const [evidence, setEvidence] =
     useState<AppEvidence[]>(localEvidence);
-  const [dataSource, setDataSource] = useState("Demo fallback data");
+
+  const [dataSource, setDataSource] =
+    useState("Demo fallback data");
+
   const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [selectedProjectId, setSelectedProjectId] =
+    useState("");
+  const [projectLoading, setProjectLoading] =
+    useState(false);
 
   useEffect(() => {
     let active = true;
@@ -229,6 +247,7 @@ function App() {
           setEvidence(remoteEvidence);
         }
 
+        setSelectedProjectId(data.project.id);
         setDataSource("Supabase data");
       } catch {
         if (active) {
@@ -247,6 +266,62 @@ function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    loadProjects()
+      .then((projectRows) => {
+        setProjects(projectRows);
+
+        if (projectRows.length > 0) {
+          setSelectedProjectId((currentId) =>
+            currentId || projectRows[0].id,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load projects", error);
+      });
+  }, []);
+
+  async function handleProjectChange(
+    nextProjectId: string,
+  ) {
+    setSelectedProjectId(nextProjectId);
+    setProjectLoading(true);
+    setReportVisible(false);
+
+    try {
+      const data = await loadCivicData(nextProjectId);
+
+      setProject(mapProject(data.project));
+
+      const remoteDocuments = mapDocuments(
+        data.projectDocuments,
+      );
+
+      const remoteEvidence = mapEvidence(data.evidence);
+
+      setDocuments(
+        remoteDocuments.length > 0
+          ? remoteDocuments
+          : localDocuments,
+      );
+
+      setEvidence(
+        remoteEvidence.length > 0
+          ? remoteEvidence
+          : localEvidence,
+      );
+
+      setDataSource("Supabase data");
+      setTab("dashboard");
+    } catch (error) {
+      console.error("Failed to load selected project", error);
+      setDataSource("Demo fallback data");
+    } finally {
+      setProjectLoading(false);
+    }
+  }
 
   const costChange = useMemo(
     () =>
@@ -316,9 +391,38 @@ function App() {
       </nav>
 
       <section className="content">
-        <p className="eyebrow">
-          {project.code} · {project.ward}
-        </p>
+        <div className="project-toolbar">
+          <p className="eyebrow">
+            {project.code} · {project.ward}
+          </p>
+
+          {projects.length > 0 && (
+            <label className="project-selector">
+              <span>Select project</span>
+
+              <select
+                value={selectedProjectId}
+                disabled={projectLoading}
+                onChange={(event) =>
+                  handleProjectChange(event.target.value)
+                }
+              >
+                {projects.map((projectOption) => (
+                  <option
+                    key={projectOption.id}
+                    value={projectOption.id}
+                  >
+                    {projectOption.name}
+                  </option>
+                ))}
+              </select>
+
+              {projectLoading && (
+                <small>Loading project...</small>
+              )}
+            </label>
+          )}
+        </div>
 
         <h1>{project.name}</h1>
 
@@ -395,7 +499,7 @@ function App() {
               {documents.map((document, index) => (
                 <div
                   className="timeline-item"
-                  key={document.name}
+                  key={`${document.name}-${index}`}
                 >
                   <div className="timeline-dot">
                     {index + 1}
@@ -507,11 +611,11 @@ function App() {
               <div className="ward">WARD 7</div>
 
               <div className="road original">
-                Original scope · 2.4 km
+                Original scope · {project.originalScope} km
               </div>
 
               <div className="road revised">
-                Revised scope · 1.6 km
+                Revised scope · {project.revisedScope} km
               </div>
 
               <div className="facility school">
@@ -543,7 +647,7 @@ function App() {
             {reportVisible && (
               <article className="report">
                 <h2>
-                  Ward 7 project verification report
+                  {project.name} verification report
                 </h2>
 
                 <h3>What changed?</h3>
@@ -569,8 +673,9 @@ function App() {
 
                 <ul>
                   <li>
-                    Why did the project scope change from 2.4 km
-                    to 1.6 km?
+                    Why did the project scope change from{" "}
+                    {project.originalScope} km to{" "}
+                    {project.revisedScope} km?
                   </li>
 
                   <li>

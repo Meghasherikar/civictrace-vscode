@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+ import { supabase } from "./supabase";
 
 export type ProjectRow = {
   id: string;
@@ -22,16 +22,43 @@ export type EvidenceRow = {
   detail: string;
 };
 
-export async function loadCivicData() {
+export async function loadProjects() {
   if (!supabase) {
     throw new Error("Supabase is not configured");
   }
 
-  const { data: project, error: projectError } = await supabase
+  const { data, error } = await supabase
     .from("projects")
     .select("*")
-    .eq("code", "WD07-SD-2023-114")
-    .single();
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as ProjectRow[];
+}
+
+export async function loadCivicData(projectId?: string) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  let projectQuery = supabase
+    .from("projects")
+    .select("*");
+
+  if (projectId) {
+    projectQuery = projectQuery.eq("id", projectId);
+  } else {
+    projectQuery = projectQuery.eq(
+      "code",
+      "WD07-SD-2023-114",
+    );
+  }
+
+  const { data: project, error: projectError } =
+    await projectQuery.single();
 
   if (projectError) {
     throw projectError;
@@ -75,6 +102,7 @@ export async function loadCivicData() {
     evidence: evidence as EvidenceRow[],
   };
 }
+
 export async function saveCivicReport(
   projectId: string,
   content: {
